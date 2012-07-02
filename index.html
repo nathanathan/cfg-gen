@@ -6,46 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Demo of interface for generating things from context-free grammars.">
     <meta name="author" content="Nathan Breit">
-
+    
     <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
     <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
     <link href="cfg-gen.css" rel="stylesheet">
     
 <style media="screen" type="text/css">
-.options {
-    display:inline-block;
-    /* background:rgba(255,255,255,0.5); */
-    border: 1px solid gray;
-    padding: 1px;
-    margin: 1px;
-    position: relative;
-}
-.menu {
-    position:absolute;
-    border: 1px solid gray;
-}
-.selection + .btn {
-    display:block;
-    width:100%;
-    height: 1px;
-}
-.group > .btn {
-    display:inline;
-}
-.symbol {
-    /*
-    margin: 1em;
-    margin-left:auto;
-    margin-right:auto;
-    */
-    text-align:center;
-}
-li{
-    white-space: nowrap;
-}
-li > * {
-    display:inline-block;
-}
+
 </style>
 
 
@@ -62,7 +29,7 @@ $(function(){
     var cfg = {
     	"begin" : ["greeting"],
     	"greeting" : ["Hi!", ["Hello ", "name"]],
-    	"name" : ["alice", "bob"]
+    	"name" : ["alice", "bob", "world"]
     };
     var cfgraph = buildCFGraph($.extend(true, {}, cfg), "begin");
     $('.container').append(cfgraph.renderHTML());

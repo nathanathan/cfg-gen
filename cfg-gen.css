@@ -1,0 +1,49 @@
+.options {
+    display:inline-block;
+    /* background:rgba(255,255,255,0.5); */
+    border: 1px solid gray;
+    padding: 1px;
+    margin: 1px;
+    position: relative;
+    vertical-align: middle;
+}
+.menu {
+    position:absolute;
+    border: 1px solid gray;
+    background-color: white;
+    padding: 1em;
+    padding-top:0;
+    z-index:1;
+}
+.selection + .btn-group > .btn {
+    height: 1px;
+    /* hack to get rid of the text */
+    text-indent: -3000px;
+}
+.btn-group {
+    min-width:5em;
+}
+.btn-group > .btn {
+    display: inline;
+    width: 70%;
+}
+.btn-group > .dropdown-toggle{
+    width: 30%;
+}
+.group > .btn {
+    display:inline;
+}
+.symbol {
+    /*
+    margin: 1em;
+    margin-left:auto;
+    margin-right:auto;
+    */
+    text-align:center;
+}
+li{
+    white-space: nowrap;
+}
+li > * {
+    display:inline-block;
+}
