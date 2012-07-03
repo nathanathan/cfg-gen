@@ -24,17 +24,15 @@ var gensym = (function() {
         }
     });
 }());
-
-function createDescriptor(obby){
-    $.each(obby, function(key, value){
-        obby[key] = {value : value, enumerable : true};
-    });
-    return obby;
-}
 function inheritFrom(a,b){
     //Using ECMAScript5's Object.create instead of classical jso pattern
     //see: http://ejohn.org/blog/ecmascript-5-objects-and-properties/
-    return Object.create(a, createDescriptor(b));
+    //return $.extend(Object.create(a), b);
+    var p = Object.create(a);
+    $.each(b, function(k,v){
+        p[k] = v;
+        });
+    return p;
 }
 var baseNode = {
     create : function(){
@@ -73,7 +71,7 @@ var groupNode = inheritFrom( baseNode, {
 var baseNT = inheritFrom( baseNode, {
     create : function(){
         var prototype =  Object.create(this);
-        if(this.value && this.value.isPrototypeOf(baseNode)){
+        if(this.value && baseNode.isPrototypeOf(this.value)){
             prototype.value = this.value.create();
         }
         return prototype;
@@ -151,23 +149,22 @@ var baseNT = inheritFrom( baseNode, {
     }
 });
 function buildCFGraph(cfg, symbolObject){
+    if(typeof symbolObject === "string"){
+        symbolObject = { symbol : symbolObject };
+    }
     if(baseNode.isPrototypeOf(symbolObject)){
         //we've already processed this one.
         return symbolObject;
     }
-    if(typeof symbolObject === "string"){
-        symbolObject = { symbol : symbolObject };
-    }
     if($.isArray(symbolObject)){
-        var optionGroup = {items:[]};
         $.each(symbolObject, function(idx, item){
-            optionGroup.items[idx] = buildCFGraph(cfg, item);
+            symbolObject[idx] = baseNode.create();//placeholder to stop infinite looping
+            symbolObject[idx] = buildCFGraph(cfg, item);
         });
-        return inheritFrom(groupNode, optionGroup);
+        return inheritFrom(groupNode, { items : symbolObject });
     }
     if(!symbolObject.symbol){
-        //anonymous object
-        symbolObject.symbol = 'gensym';
+        symbolObject.symbol = 'anonymous object';
     }
     if(!symbolObject.options){
         if(symbolObject.symbol in cfg){
@@ -177,9 +174,9 @@ function buildCFGraph(cfg, symbolObject){
             return inheritFrom(baseNode, symbolObject);
         }
     }
-    var options = symbolObject.options;
-    $.each(options, function(i){
-        options[i] = buildCFGraph(cfg, options[i]);
+    $.each(symbolObject.options, function(idx, option){
+        symbolObject.options[idx] = baseNode.create();//placeholder to stop infinite looping
+        symbolObject.options[idx] = buildCFGraph(cfg, option);
     });
     return inheritFrom(baseNT, symbolObject);
 }

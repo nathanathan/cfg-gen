@@ -25,13 +25,16 @@
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <script src="cfg-gen.js"></script>
 <script>
+var cfg = {
+    "begin" : ["greeting", "conjunction"],
+	"greeting" : ["Hi!", ["Hello ", "name"]],
+    "conjunction" : [["begin", " and ", "begin"]],
+	"name" : ["alice", "bob", "world"]
+};
 $(function(){
-    var cfg = {
-    	"begin" : ["greeting"],
-    	"greeting" : ["Hi!", ["Hello ", "name"]],
-    	"name" : ["alice", "bob", "world"]
-    };
     var cfgraph = buildCFGraph($.extend(true, {}, cfg), "begin");
+    console.log('cfgraph built');
+    console.log(cfgraph);
     $('.container').append(cfgraph.renderHTML());
 });
 </script>
