@@ -1,3 +1,6 @@
+//For halting script exec
+$(window).keydown(function(e) { if (e.keyCode == 123) debugger; });
+
 var gensym = (function() {
     var uniqueSymbol = 1;
     function gensym(){
@@ -34,7 +37,7 @@ function inheritFrom(a,b){
         });
     return p;
 }
-var baseNode = {
+var BaseNode = {
     create : function(){
         return Object.create(this);
     },
@@ -47,9 +50,15 @@ var baseNode = {
         } else {
             return $('<span>').html(this.value);
         }
+    },
+    generateString : function(){
+        if(this.value && BaseNode.isPrototypeOf(this.value)){
+            return this.value.generateString();
+        }
+        return this.value;
     }
 };
-var groupNode = inheritFrom( baseNode, {
+var GroupNode = inheritFrom( BaseNode, {
     create : function(){
         var prototype =  Object.create(this);
         prototype.items = [];
@@ -58,20 +67,43 @@ var groupNode = inheritFrom( baseNode, {
         });
         return prototype;
     },
+    generateString : function(){
+        var string = "";
+        $.each(this.items, function(idx, item){
+            string += item.generateString();
+        });
+        return string;
+    },
     items : [],
     renderHTML : function(){
         var $container = $('<div>').addClass('group');
         $.each(this.items, function(idx, item){
             $container.append(item.renderHTML());
         });
+        //For style
+        /*
+        $container.resize(function(){
+            var max_el_height = 0;
+            $container.children().each(function(idx, $el){
+                var el_height = $(this).css('height');
+                if(el_height > max_el_height){
+                    max_el_height = el_height;
+                }
+            });
+            alert('hi');
+            $container.children().each(function(idx, $el){
+                $(this).css('height', max_el_height);
+            });
+        });
+        */
         return $container;
     }
 });
 //NT = non-terminal
-var baseNT = inheritFrom( baseNode, {
+var NonTerminalNode = inheritFrom( BaseNode, {
     create : function(){
         var prototype =  Object.create(this);
-        if(this.value && baseNode.isPrototypeOf(this.value)){
+        if(this.value && BaseNode.isPrototypeOf(this.value)){
             prototype.value = this.value.create();
         }
         return prototype;
@@ -121,7 +153,7 @@ var baseNT = inheritFrom( baseNode, {
         var $container = $('<div>').addClass('options');
         $container.addClass('uid'+NT.uid);
         if(NT.value){
-            $container.append(baseNode.renderHTML.call(this).addClass('selection'));
+            $container.append(BaseNode.renderHTML.call(this).addClass('selection'));
         } else {
             $container.append($symbol.clone());
         }
@@ -142,6 +174,12 @@ var baseNT = inheritFrom( baseNode, {
         $btnGroup.append($('<button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>'));
         var $otherOptions = $('<ul class="dropdown-menu">');
         $otherOptions.append($('<li><a>Inspect Object</a></li>'));
+        var $genStringBtn = $('<a>GenerateString</a>')
+        $genStringBtn.click(function(){
+            alert(NT.generateString());
+        });
+        $otherOptions.append($('<li>').append($genStringBtn));
+        
         $btnGroup.append($otherOptions);
         $container.append($btnGroup);
         $container.addClass('selection');
@@ -152,31 +190,36 @@ function buildCFGraph(cfg, symbolObject){
     if(typeof symbolObject === "string"){
         symbolObject = { symbol : symbolObject };
     }
-    if(baseNode.isPrototypeOf(symbolObject)){
+    if(BaseNode.isPrototypeOf(symbolObject)){
         //we've already processed this one.
         return symbolObject;
     }
     if($.isArray(symbolObject)){
         $.each(symbolObject, function(idx, item){
-            symbolObject[idx] = baseNode.create();//placeholder to stop infinite looping
+            symbolObject[idx] = BaseNode.create();//placeholder to stop infinite looping
             symbolObject[idx] = buildCFGraph(cfg, item);
         });
-        return inheritFrom(groupNode, { items : symbolObject });
+        return inheritFrom(GroupNode, { items : symbolObject });
     }
-    if(!symbolObject.symbol){
+    if(!('symbol' in symbolObject)){
         symbolObject.symbol = 'anonymous object';
     }
     if(!symbolObject.options){
         if(symbolObject.symbol in cfg){
-            symbolObject.options = cfg[symbolObject.symbol];
+            var cfgValue = cfg[symbolObject.symbol];
+            if($.isArray(cfgValue)){
+                symbolObject.options = cfgValue;
+            } else {
+                return inheritFrom(BaseNode, $.extend({}, cfgValue, symbolObject));
+            }
         } else {
             symbolObject.value = symbolObject.symbol;
-            return inheritFrom(baseNode, symbolObject);
+            return inheritFrom(BaseNode, symbolObject);
         }
     }
     $.each(symbolObject.options, function(idx, option){
-        symbolObject.options[idx] = baseNode.create();//placeholder to stop infinite looping
+        symbolObject.options[idx] = BaseNode.create();//placeholder to stop infinite looping
         symbolObject.options[idx] = buildCFGraph(cfg, option);
     });
-    return inheritFrom(baseNT, symbolObject);
+    return inheritFrom(NonTerminalNode, symbolObject);
 }

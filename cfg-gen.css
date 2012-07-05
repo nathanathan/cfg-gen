@@ -1,7 +1,7 @@
 .options {
     display:inline-block;
     /* background:rgba(255,255,255,0.5); */
-    border: 1px solid gray;
+    border: 1px solid rgba(100,100,100,0.1);
     padding: 1px;
     margin: 1px;
     position: relative;
@@ -45,5 +45,9 @@ li{
     white-space: nowrap;
 }
 li > * {
+    vertical-align:middle;
     display:inline-block;
+}
+.dropdown-menu{
+    min-width:100%;
 }

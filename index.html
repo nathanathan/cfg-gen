@@ -25,11 +25,80 @@
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <script src="cfg-gen.js"></script>
 <script>
-var cfg = {
+/*
+//The inheritance from BaseNode will be setup in buildCFGraph
+//I think there is a better way of doing this.
+var listNode = {
+    value : [],//list node has 0 or more values.
+    renderHTML : function(){
+        var that = this;
+        var $list = $('<ul>').addClass('nav').addClass('nav-list');
+        $.each(this.value, function(i, val_item){            
+            //Put it in selectable row
+            var $row = $('<li>');
+            var $rmBtn;
+            $row.append(val_item.renderHTML());
+            $list.append($row);
+        });
+        var $addBtn = $('<button>').addClass('btn').text('add item');
+        $addBtn.click(function(){
+            var itemPrototype = that.create();
+            
+        });
+        $list.append($('<li>').append($addBtn));
+        return $list;
+    }
+};
+function ListOf(symbol){
+    return inheritFrom(listNode, {symbol : symbol});
+}
+*/
+var TextInput = {
+    symbol : "",
+    renderHTML : function(){
+        var that = this;
+        var $container = $('<div>');
+        //$container.append( BaseNode.renderHTML.call(this));
+        var $input = $('<input>');
+        $input.val(this.value);
+        $input.change(function(){
+            that.value = $(this).val();
+        });
+        $container.append($input);
+        return $container;
+    },
+    generateString : function(){
+        if(this.value && BaseNode.isPrototypeOf(this.value)){
+            return this.value.generateString();
+        }
+        return this.value;
+    }
+}
+
+var lbr = {
+        symbol : "",
+        renderHTML : function(){
+            return $('<br />');//this.__proto__.renderHTML.call(this);
+        }
+    };
+
+var test_cfg = {
     "begin" : ["greeting", "conjunction"],
 	"greeting" : ["Hi!", ["Hello ", "name"]],
     "conjunction" : [["begin", " and ", "begin"]],
 	"name" : ["alice", "bob", "world"]
+};
+var cfg = {
+    "begin" : ["object", "array"],
+    "object" : [["{", lbr, "pairs", lbr, "}"]],
+    "pairs" : [["pair", ",", lbr, "pairs"], "pair"],
+    //Would be nice to have trailing commas or an easier way to manipulate lists.
+    //"pairs" : [[",", "pair", "pairs"], ""],
+    "pair" : [["string", ":", "value"]],
+    "array" : [["[", lbr, "values", lbr, "]"]],
+    "values" : [["value", ",", lbr, "values"], "value"],
+    "value" : ["string", "object", "array"],
+	"string" : TextInput
 };
 $(function(){
     var cfgraph = buildCFGraph($.extend(true, {}, cfg), "begin");
