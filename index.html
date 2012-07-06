@@ -53,11 +53,17 @@ function ListOf(symbol){
     return inheritFrom(listNode, {symbol : symbol});
 }
 */
+function Image(){
+    return {
+        a:1
+    };
+}
+
 var TextInput = {
     symbol : "",
     renderHTML : function(){
         var that = this;
-        var $container = $('<div>');
+        var $container = $('<span>');
         //$container.append( BaseNode.renderHTML.call(this));
         var $input = $('<input>');
         $input.val(this.value);
@@ -89,7 +95,7 @@ var test_cfg = {
 	"name" : ["alice", "bob", "world"]
 };
 var cfg = {
-    "begin" : ["object", "array"],
+    "begin" : ["object", "array", "tiger"],
     "object" : [["{", lbr, "pairs", lbr, "}"]],
     "pairs" : [["pair", ",", lbr, "pairs"], "pair"],
     //Would be nice to have trailing commas or an easier way to manipulate lists.
@@ -98,7 +104,8 @@ var cfg = {
     "array" : [["[", lbr, "values", lbr, "]"]],
     "values" : [["value", ",", lbr, "values"], "value"],
     "value" : ["string", "object", "array"],
-	"string" : TextInput
+	"string" : TextInput,
+    "tiger" : ['<img src="http://www.onlineartdemos.co.uk/misc_images/on-easel/siberian-tiger-6.jpg"/>']
 };
 $(function(){
     var cfgraph = buildCFGraph($.extend(true, {}, cfg), "begin");

@@ -101,6 +101,9 @@ var GroupNode = inheritFrom( BaseNode, {
 });
 //NT = non-terminal
 var NonTerminalNode = inheritFrom( BaseNode, {
+    instances : [],//Only override this if you know what you're doing.
+    getSuggestions : function(){
+    },
     create : function(){
         var prototype =  Object.create(this);
         if(this.value && BaseNode.isPrototypeOf(this.value)){
@@ -116,6 +119,7 @@ var NonTerminalNode = inheritFrom( BaseNode, {
             $(this).replaceWith(NT.renderHTML());
         });
     },
+    $menu : null,
     renderMenuHTML : function(){
         var NT = this;
         function renderItems(items){
@@ -129,9 +133,50 @@ var NonTerminalNode = inheritFrom( BaseNode, {
                 //Put it in selectable row
                 var $row = $('<li>');
                 var $rowBtn = $('<input type="radio">').addClass('option-button');
+                /*
                 $rowBtn.click(function(){
+                    NT.$menu.detach();
+                    NT.$menu = null;
                     NT.setValue(itemPrototype);
                 });
+                */
+                //This does "superselection" where parents are selected while mouse is held down
+                $rowBtn.bind('mousedown', function mousedownHandler() {
+                    var $rowBtn = $(this);//just to be sure $rowBtn is pointing at the right thing
+                    $rowBtn.attr('checked', true);
+                    $rowBtn.unbind('mousedown', mousedownHandler);
+                    var $parentRowBtn = $rowBtn.closest('.selection').closest('li').children('.option-button');
+                    if($parentRowBtn.length > 0){
+                        var mousedownTimer = setTimeout(function(){
+                            $parentRowBtn.mousedown();
+                        }, 650);
+                    }
+                    var mouseupHandler = function(event){
+                        $rowBtn.unbind(event);
+                        clearTimeout(mousedownTimer);
+                        $rowBtn.bind('mousedown', mousedownHandler);
+                        
+                        $rowBtn.unbind('mouseleave', mouseleaveHandler);
+                        
+                        NT.$menu.detach();
+                        NT.$menu = null;
+                        NT.setValue(itemPrototype);
+                        $parentRowBtn.mouseup();
+                    };
+                    $rowBtn.bind('mouseup', mouseupHandler);
+                    var mouseleaveHandler = function(event){
+                        $rowBtn.unbind(event);
+                        clearTimeout(mousedownTimer);
+                        $rowBtn.bind('mousedown', mousedownHandler);
+                        
+                        $rowBtn.unbind('mouseup', mouseupHandler);
+                        
+                        $(this).attr('checked', false);
+                        $parentRowBtn.mouseleave();
+                    };
+                    $rowBtn.bind('mouseleave', mouseleaveHandler);
+                });
+                
                 $row.append($rowBtn);
                 $row.append(itemPrototype.renderHTML());
                 $list.append($row);
@@ -139,7 +184,16 @@ var NonTerminalNode = inheritFrom( BaseNode, {
             return $list;
         }
         var $menu = $('<div>').addClass('well').addClass('menu');
-        $menu.append($('<div class="label label-info symbol">').text(NT.symbol));
+        var $head = $('<div>').addClass('menu-header');
+        var $closeBtn = $('<button class="close">×</button>');
+        $closeBtn.click(function(){
+            NT.$menu.remove();
+            NT.$menu = null;
+            //TODO: This breaks border highlighting which I want to do with css.
+        });
+        $head.append($closeBtn);
+        $head.append($('<div class="label label-info symbol">').text(NT.symbol));
+        $menu.append($head);
         $menu.append($('<h5>').text("base options"));
         $menu.append(renderItems(NT.options));
         $menu.append($('<h5>').text("instances"));
@@ -148,33 +202,41 @@ var NonTerminalNode = inheritFrom( BaseNode, {
     },
     renderHTML : function(){
         var NT = this;
-        var $symbol = $('<div class="label label-inverse symbol">');
-        $symbol.text(NT.symbol);
         var $container = $('<div>').addClass('options');
         $container.addClass('uid'+NT.uid);
         if(NT.value){
             $container.append(BaseNode.renderHTML.call(this).addClass('selection'));
         } else {
+            var $symbol = $('<div class="label label-inverse symbol">');
+            $symbol.text(NT.symbol);
             $container.append($symbol.clone());
         }
+        
         var $btnGroup = $('<div class="btn-group">');
-        var $menuBtn = $('<button>').addClass('btn').text('options');
-        //TODO: Make menu stay open on selection.
-        var $menu = null;
+        var $menuBtn = $('<button class="btn btn-mini">').text('options');
+        var default_border_color = null;
         $menuBtn.click(function(){
-            if($menu){
-                $menu.remove();
-                $menu = null;
+            if(NT.$menu){
+                NT.$menu.remove();
+                NT.$menu = null;
             } else {
-                $menu = NT.renderMenuHTML();
-                $container.append($menu);
+                NT.$menu = NT.renderMenuHTML();
+                $container.append(NT.$menu);
+            }
+            if(!default_border_color){
+                default_border_color = $container.css('border-left-color');
+            }
+            if($container.css('border-left-color') !== 'rgb(255, 200, 200)'){
+                $container.css('border-color', 'rgb(255,200,200)');
+            } else {
+                $container.css('border-color', default_border_color);
             }
         });
         $btnGroup.append($menuBtn);
-        $btnGroup.append($('<button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>'));
+        $btnGroup.append($('<button class="btn btn-mini dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>'));
         var $otherOptions = $('<ul class="dropdown-menu">');
         $otherOptions.append($('<li><a>Inspect Object</a></li>'));
-        var $genStringBtn = $('<a>GenerateString</a>')
+        var $genStringBtn = $('<a>GenerateString</a>');
         $genStringBtn.click(function(){
             alert(NT.generateString());
         });
@@ -183,6 +245,9 @@ var NonTerminalNode = inheritFrom( BaseNode, {
         $btnGroup.append($otherOptions);
         $container.append($btnGroup);
         $container.addClass('selection');
+        if(NT.$menu){
+            $container.append(NT.$menu);
+        }
         return $container;
     }
 });
