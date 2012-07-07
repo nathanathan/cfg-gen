@@ -88,13 +88,13 @@ var lbr = {
         }
     };
 
-var test_cfg = {
+var cfg = {
     "begin" : ["greeting", "conjunction"],
 	"greeting" : ["Hi!", ["Hello ", "name"]],
     "conjunction" : [["begin", " and ", "begin"]],
 	"name" : ["alice", "bob", "world"]
 };
-var cfg = {
+var json_cfg = {
     "begin" : ["object", "array", "tiger"],
     "object" : [["{", lbr, "pairs", lbr, "}"]],
     "pairs" : [["pair", ",", lbr, "pairs"], "pair"],

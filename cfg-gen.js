@@ -38,8 +38,11 @@ function inheritFrom(a,b){
     return p;
 }
 var BaseNode = {
-    create : function(){
-        return Object.create(this);
+    create : function(overrides){
+        if(!overrides){
+            overrides = {};
+        }
+        return $.extend(Object.create(this), overrides);
     },
     symbol : null,//change to name
     value : null,
@@ -56,16 +59,30 @@ var BaseNode = {
             return this.value.generateString();
         }
         return this.value;
+    },
+    //getParseWeight : function(){},
+    parseString : function(string){
+        if(string === this.symbol){
+            return this.create({value:this.symbol});
+        }
+        /*
+        console.log(this);
+        console.log("could not parse");
+        console.log(string);
+        */
+        return false;
     }
 };
 var GroupNode = inheritFrom( BaseNode, {
-    create : function(){
-        var prototype =  Object.create(this);
-        prototype.items = [];
+    create : function(overrides){
+        if(!overrides){
+            overrides = {};
+        }
+        var items_copy = [];
         $.each(this.items, function(idx, item){
-            prototype.items[idx] = item.create();
+            items_copy[idx] = item.create();
         });
-        return prototype;
+        return $.extend(Object.create(this), {items:items_copy}, overrides);
     },
     generateString : function(){
         var string = "";
@@ -73,6 +90,33 @@ var GroupNode = inheritFrom( BaseNode, {
             string += item.generateString();
         });
         return string;
+    },
+    parseString : function(string){
+        if(this.items.length === 0){
+            return string === "";
+        }
+        var currentItem = this.items[0];
+        var remainingItemGroup = this.create({items:this.items.slice(1)});
+        
+        for(var i = 0; i < string.length; i++){
+            var leftParse = currentItem.parseString(string.substr(0, i));
+            if(leftParse){
+                console.log("left parsed");
+                var rightParse = remainingItemGroup.parseString(string.substr(i));
+                if(rightParse){
+                    console.log(this);
+                    console.log("parsed");
+                    console.log(string);
+                    return this.create({value:[leftParse].concat(rightParse.value)});
+                }
+            }
+        }
+        /*
+        console.log(this);
+        console.log("could not parse");
+        console.log(string);
+        */
+        return false;
     },
     items : [],
     renderHTML : function(){
@@ -101,15 +145,32 @@ var GroupNode = inheritFrom( BaseNode, {
 });
 //NT = non-terminal
 var NonTerminalNode = inheritFrom( BaseNode, {
+    create : function(overrides){
+        if(!overrides){
+            overrides = {};
+        }
+        if(this.value && BaseNode.isPrototypeOf(this.value)){
+            //Copy the value
+            return $.extend(Object.create(this), {value:this.value.create()}, overrides);
+        }
+        return $.extend(Object.create(this), overrides);
+    },
     instances : [],//Only override this if you know what you're doing.
     getSuggestions : function(){
     },
-    create : function(){
-        var prototype =  Object.create(this);
-        if(this.value && BaseNode.isPrototypeOf(this.value)){
-            prototype.value = this.value.create();
+    parseString : function(string){
+        for(var i = 0; i < this.options.length; i++){
+            var optionParse = this.options[i].parseString(string);
+            if(optionParse){
+                return this.create({value:optionParse});
+            }
         }
-        return prototype;
+        /*
+        console.log(this);
+        console.log("could not parse");
+        console.log(string);
+        */
+        return false;
     },
     options : null,
     setValue : function(val){
@@ -236,11 +297,22 @@ var NonTerminalNode = inheritFrom( BaseNode, {
         $btnGroup.append($('<button class="btn btn-mini dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>'));
         var $otherOptions = $('<ul class="dropdown-menu">');
         $otherOptions.append($('<li><a>Inspect Object</a></li>'));
-        var $genStringBtn = $('<a>GenerateString</a>');
+        var $genStringBtn = $('<a>Generate String</a>');
         $genStringBtn.click(function(){
             alert(NT.generateString());
         });
         $otherOptions.append($('<li>').append($genStringBtn));
+        var $parseStringBtn = $('<a>Parse String</a>');
+        $parseStringBtn.click(function(){
+            var parse = NT.parseString(prompt());
+            if(parse){
+                console.log(parse);
+                NT.setValue(parse.value);
+            } else {
+                alert("could not parse string");
+            }
+        });
+        $otherOptions.append($('<li>').append($parseStringBtn));
         
         $btnGroup.append($otherOptions);
         $container.append($btnGroup);
