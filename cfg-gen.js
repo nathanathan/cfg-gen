@@ -34,26 +34,24 @@ function inheritFrom(a,b){
     var p = Object.create(a);
     $.each(b, function(k,v){
         p[k] = v;
-        });
+    });
     return p;
 }
 var BaseNode = {
+    symbol : null,//TODO: change to name?
+    value : null,
+    /**
+     * Create a prototype of this object, with properties in the given object overridden.
+     **/
     create : function(overrides){
         if(!overrides){
             overrides = {};
         }
         return $.extend(Object.create(this), overrides);
     },
-    symbol : null,//change to name
-    value : null,
-    renderHTML : function(){
-        if(this.value instanceof Object && 'renderHTML' in this.value){
-            //hooray it quacks
-            return this.value.renderHTML();
-        } else {
-            return $('<span>').html(this.value);
-        }
-    },
+    /**
+     * Generates a string based on the value of this CFG node.
+     **/
     generateString : function(){
         if(this.value && BaseNode.isPrototypeOf(this.value)){
             return this.value.generateString();
@@ -61,19 +59,30 @@ var BaseNode = {
         return this.value;
     },
     //getParseWeight : function(){},
+    /**
+     * Does top down parsing of a string, returning a newly created instance
+     * of the node with the value set if parsing is successful, or false for failure.
+     **/
     parseString : function(string){
         if(string === this.symbol){
             return this.create({value:this.symbol});
         }
-        /*
-        console.log(this);
-        console.log("could not parse");
-        console.log(string);
-        */
         return false;
+    },
+    /**
+     * Creates a jQuery DOM object representing this node.
+     **/
+    renderHTML : function(){
+        if(this.value instanceof Object && 'renderHTML' in this.value){
+            //hooray it quacks
+            return this.value.renderHTML();
+        } else {
+            return $('<span>').html(this.value);
+        }
     }
 };
 var GroupNode = inheritFrom( BaseNode, {
+    items : [],
     create : function(overrides){
         if(!overrides){
             overrides = {};
@@ -93,32 +102,26 @@ var GroupNode = inheritFrom( BaseNode, {
     },
     parseString : function(string){
         if(this.items.length === 0){
-            return string === "";
+            return string === '' ? this.create() : false;
         }
         var currentItem = this.items[0];
+        //This could be more efficient
         var remainingItemGroup = this.create({items:this.items.slice(1)});
         
-        for(var i = 0; i < string.length; i++){
+        for(var i = 0; i <= string.length; i++){
             var leftParse = currentItem.parseString(string.substr(0, i));
             if(leftParse){
-                console.log("left parsed");
                 var rightParse = remainingItemGroup.parseString(string.substr(i));
                 if(rightParse){
                     console.log(this);
                     console.log("parsed");
                     console.log(string);
-                    return this.create({value:[leftParse].concat(rightParse.value)});
+                    return this.create({items:[leftParse].concat(rightParse.items)});
                 }
             }
         }
-        /*
-        console.log(this);
-        console.log("could not parse");
-        console.log(string);
-        */
         return false;
     },
-    items : [],
     renderHTML : function(){
         var $container = $('<div>').addClass('group');
         $.each(this.items, function(idx, item){
@@ -145,6 +148,7 @@ var GroupNode = inheritFrom( BaseNode, {
 });
 //NT = non-terminal
 var NonTerminalNode = inheritFrom( BaseNode, {
+    options : null,
     create : function(overrides){
         if(!overrides){
             overrides = {};
@@ -155,9 +159,6 @@ var NonTerminalNode = inheritFrom( BaseNode, {
         }
         return $.extend(Object.create(this), overrides);
     },
-    instances : [],//Only override this if you know what you're doing.
-    getSuggestions : function(){
-    },
     parseString : function(string){
         for(var i = 0; i < this.options.length; i++){
             var optionParse = this.options[i].parseString(string);
@@ -165,20 +166,17 @@ var NonTerminalNode = inheritFrom( BaseNode, {
                 return this.create({value:optionParse});
             }
         }
-        /*
-        console.log(this);
-        console.log("could not parse");
-        console.log(string);
-        */
         return false;
     },
-    options : null,
     setValue : function(val){
         var NT = this;
         NT.value = val;
         $('.uid'+NT.uid).each(function(){
             $(this).replaceWith(NT.renderHTML());
         });
+    },
+    instances : [],//Only override this if you know what you're doing.
+    getSuggestions : function(){
     },
     $menu : null,
     renderMenuHTML : function(){
@@ -266,7 +264,7 @@ var NonTerminalNode = inheritFrom( BaseNode, {
         var $container = $('<div>').addClass('options');
         $container.addClass('uid'+NT.uid);
         if(NT.value){
-            $container.append(BaseNode.renderHTML.call(this).addClass('selection'));
+            $container.append(NT.value.renderHTML().addClass('selection'));
         } else {
             var $symbol = $('<div class="label label-inverse symbol">');
             $symbol.text(NT.symbol);
@@ -306,7 +304,7 @@ var NonTerminalNode = inheritFrom( BaseNode, {
         $parseStringBtn.click(function(){
             var parse = NT.parseString(prompt());
             if(parse){
-                console.log(parse);
+                //console.log(parse.value);
                 NT.setValue(parse.value);
             } else {
                 alert("could not parse string");
