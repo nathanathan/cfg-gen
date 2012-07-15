@@ -61,3 +61,34 @@ li > * {
 .menu > h5 {
     clear:both;
 }
+.option-button {
+    margin-right: 1em;
+    /*
+    border-radius: 100%;
+    
+    font-size:2em;
+    cursor: pointer;
+    
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    */
+}
+/*
+.selectable .ui-selecting { color: #F39814 }
+.selectable .ui-selected { background: #F39814; color: white; }
+.selectable {
+    list-style-type: none;
+    margin: 0;
+    margin-right: 1em;
+    padding: 0;
+}
+.selectable li {
+    font-size:2em;
+    cursor: pointer;
+    /*prevent highlighting*/
+}
+*/
